@@ -1,0 +1,51 @@
+# config/presets/phase2_lock.yaml
+#
+# Phase 2 lock (2026-05-09) — post-v50-v55 halt config.
+# Hardened from paper_safe.yaml after the −$10.67 / 10-position halt.
+#
+# Active during the PAPER soak phase that gates a future LIVE re-arm.
+# Differences vs paper_safe.yaml:
+#   * BOT_MODE: PAPER (was READ_ONLY)        — strategies actually run
+#   * PAPER_MODE: false                       — execution exercises sign path
+#   * ARMED: true                             — buy intents go through
+#   * MAX_POSITION_USD: 5 (was 2)             — operator-locked
+#   * MAX_POSITION_USD_HARD: 7 (was 5)        — lockstep tighten with soft
+#   * MAX_TOTAL_EXPOSURE_USD: 7 (was 20)      — single-position canary
+#   * MAX_OPEN_POSITIONS: 1 (was 3)           — single-position canary
+#   * DAILY_LOSS_CAP_USD: 10 (was 5)
+#   * STRATEGY_COPY_SCALP: false              — disabled post post-mortem
+#   * STRATEGY_ENDGAME_YIELD: false           — opt-in only
+#
+# Restore paper_safe.yaml after copy_trade demonstrates +EV across
+# >=5 PAPER-soak fills.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "7"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "true"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "false"
+  STRATEGY_SCALP_1H: "false"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

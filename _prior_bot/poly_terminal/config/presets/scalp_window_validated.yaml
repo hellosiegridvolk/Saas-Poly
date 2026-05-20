@@ -1,0 +1,72 @@
+# config/presets/scalp_window_validated.yaml
+#
+# Phase 38 (2026-05-11) — first preset to enable scalp_window (both
+# 15m + 1h variants) as the SOLE active strategy under PAPER, with the
+# bleed-band filter [0.60, 0.80] active.
+#
+# Evidence (from `scripts/strategy_drilldown.py --strategy scalp_window`
+# on 2026-05-11 against the full lifetime sample of 113 fills):
+#
+#   * win rate            : 54.9%
+#   * lifetime ROI        : +3.12%
+#   * older half PnL      : +$15.93 (55.4% WR)
+#   * recent half PnL     : +$13.99 (54.4% WR)   ← stable, not decaying
+#   * TP avg              : +$1.92  /  SL avg: -$1.53 (favorable asymmetry)
+#   * PnL distribution    : 19 fills with >+$2 gain across multiple weeks
+#                           (edge is distributed, not outlier-driven)
+#
+# Entry-price band ROI (the key finding):
+#
+#     <0.20    +5.65%  ( 9 fills)
+#     0.20-0.40 +4.52% (27 fills)
+#     0.40-0.60 +5.67% (36 fills)   ← strongest band
+#     0.60-0.80 -2.09% (21 fills)   ← BLEED ZONE (filtered by this preset)
+#     >=0.80   +1.55% (20 fills)
+#
+# With the 0.60-0.80 band filtered, projected ROI on the same fill
+# universe lifts from +3.12% to ~+4.3%. The bleed-band filter is the
+# entire reason this preset exists.
+#
+# Pass criteria for promotion off PAPER:
+#   * SELL_FAILED = 0, phantom_imports = 0, truth_up_misses = 0,
+#     patient_exit_stuck = 0 over the soak window (mechanical, all
+#     already passing under Phase 34/35/36).
+#   * >= 5 closed fills (113 fills lifetime → ~10/day on average,
+#     should easily clear within a 12-24h soak).
+#   * true PnL > 0 after truth-up.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "7"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "true"
+  STRATEGY_SCALP_1H: "true"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+  STRATEGY_CRYPTO_BAR_MOMENTUM: "false"   # signal-uncalibrated
+
+  # Phase 38 — bleed-band filter active. See header for evidence.
+  SCALP_WINDOW_BLEED_BAND_LO: "0.60"
+  SCALP_WINDOW_BLEED_BAND_HI: "0.80"
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

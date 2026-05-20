@@ -1,0 +1,99 @@
+# config/presets/live_canary_v1.yaml
+#
+# Phase 41.5 (2026-05-13) — FIRST LIVE CANARY for scalp_window.
+#
+# This is the LIVE counterpart to certainty_farm_parallel — same
+# strategy mix, same risk gates, but flipped to LIVE mode with all
+# position/exposure/daily-loss caps tightened to canary-grade ($1
+# per position, $3 daily-loss cap = 3× max position). ADR 0004
+# requires risk-critical keys come from a preset (not .env edits),
+# so this file exists specifically to allow the LIVE canary to pass
+# preflight.
+#
+# Why this preset exists:
+#   The first attempt to promote to LIVE on 2026-05-13 failed Stage 4
+#   preflight because certainty_farm_parallel hard-locks
+#   BOT_MODE=PAPER and MAX_POSITION_USD=5. The auto-revert kicked in
+#   and bounced .env back to PAPER. The fix is a dedicated LIVE-mode
+#   preset that the canary-promote wrapper switches PARAMS_PRESET to
+#   before editing BOT_MODE.
+#
+# Caps rationale ($1 / $2 / $2 / $3):
+#   * $1 max position — explicit operator cap for first LIVE fill
+#   * $2 hard ceiling — emergency headroom in case allocator math
+#     rounds up; should never actually be reached
+#   * $2 total exposure — only ONE position open at a time (the
+#     one_strategy_at_a_time allocator gate is what enforces this),
+#     so total exposure == max position by design
+#   * $3 daily-loss cap — 3× max position = "3 losing trades and
+#     stop". At the PAPER-history win rate of ~60% and avg +$0.04
+#     per fill on $1 size, hitting -$3 is a strong abort signal.
+#
+# Promotion criteria to relax these caps (after this canary):
+#   * After 5 LIVE fills with True PnL > 0 and zero mechanical
+#     failures: consider raising max_position to $2 (next preset
+#     would be live_canary_v2.yaml).
+#   * After 30 LIVE fills with True PnL ≥ +$1: consider $5 cap.
+#   * Do NOT scale beyond $5 in the first week, regardless of
+#     numbers — risk discipline IS the edge.
+#
+# Strategies enabled mirror certainty_farm_parallel exactly:
+# scalp_window is primary, certainty_farm fail-closed (no overrides
+# in preset; operator populates CERTAINTY_FARM_OVERRIDES via .env
+# only when it should fire).
+
+version: 1
+
+overrides:
+  BOT_MODE: LIVE
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "1"
+  MAX_POSITION_USD_HARD: "2"
+  MAX_TOTAL_EXPOSURE_USD: "2"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "3"
+
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "true"
+  STRATEGY_SCALP_1H: "true"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+  STRATEGY_CRYPTO_BAR_MOMENTUM: "false"
+  STRATEGY_CERTAINTY_FARM: "true"
+
+  # scalp_window bleed-band still active. Lifetime ROI +3.12% with
+  # the [0.60, 0.80] band filtered. Same setting as PAPER preset.
+  SCALP_WINDOW_BLEED_BAND_LO: "0.60"
+  SCALP_WINDOW_BLEED_BAND_HI: "0.80"
+
+  # Phase 41.6 (2026-05-14) — entry-price floor mirrors PAPER preset.
+  # Blocks lottery-ticket tail entries (e.g. NO at 0.07 with 10min to
+  # bar close that resolve worthless). Must match PAPER preset or
+  # preflight will report drift.
+  SCALP_WINDOW_ENTRY_PRICE_LO: "0.10"
+  SCALP_WINDOW_ENTRY_PRICE_HI: "0.0"
+  # Phase 41.8 — min-time-to-resolution gate (MITIGATION). Mirrors
+  # the PAPER preset; must match or preflight drifts. 900s ⇒ 15m
+  # entries disabled by construction ("1h bars only"). Honest
+  # consequence, documented; not the paper-sim root-cause fix.
+  SCALP_WINDOW_MIN_SECONDS_TO_RESOLUTION: "900"
+
+  # certainty_farm overrides stay empty in the preset. If the
+  # operator wants certainty_farm to fire under the LIVE canary,
+  # they populate CERTAINTY_FARM_OVERRIDES in .env. Without it,
+  # only scalp_window will produce intents.
+  CERTAINTY_FARM_OVERRIDES: ""
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

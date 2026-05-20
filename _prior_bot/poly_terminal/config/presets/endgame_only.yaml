@@ -1,0 +1,58 @@
+# config/presets/endgame_only.yaml
+#
+# Direction A preset (2026-05-10) — endgame_yield as the sole active
+# strategy. Pivot from copy/legacy strategies after soak v3 closed
+# at -$42.96 / 525 fills with all n≥10 wallets bleeding -0.6% to -8.3% ROI.
+#
+# Key shifts vs paper_wide.yaml:
+#   * STRATEGY_COPY_TRADE: false   (was true) — no demonstrable edge
+#   * STRATEGY_COPY_SCALP: false   — disabled (already in soak v3)
+#   * STRATEGY_FLASH_CRASH: false  — 0 fills triggered in 7h51m
+#   * STRATEGY_SCALP_15M: false
+#   * STRATEGY_SCALP_1H: false
+#   * STRATEGY_DUMP_HEDGE: false   — 16 intents emitted, 0 fills
+#   * STRATEGY_ENDGAME_YIELD: true — production wiring complete
+#                                    (gamma fetcher, EV gate, allocator)
+#   * MAX_OPEN_POSITIONS: 1        — endgame trades are high-conviction,
+#                                    one at a time
+#   * MAX_TOTAL_EXPOSURE_USD: 7    — single-position cap aligned
+#
+# The ManualConfidenceSource (env: ENDGAME_CONFIDENCE_OVERRIDES) is the
+# operator's input. With zero entries, the strategy emits zero intents
+# (fail-closed). With ≥1 entry, the strategy starts firing on the
+# configured market(s) per the EV gate and allocator.
+#
+# When the operator wants to A/B-test the new wallet cohort against
+# endgame, switch back to `paper_wide` (re-enables copy strategies)
+# OR create a separate `cold_cohort_copy_only.yaml` preset.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "7"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "false"
+  STRATEGY_SCALP_1H: "false"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "true"
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

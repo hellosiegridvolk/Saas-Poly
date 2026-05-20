@@ -1,0 +1,77 @@
+# config/presets/livedry_canary.yaml
+#
+# LIVE_DRY canary preset — dump_hedge ONLY.
+#
+# Purpose: operator-gated first shadow run in LIVE_DRY mode.  The bot
+# signs and submits real orders but Polymarket routes them as dry-run
+# fills (no on-chain settlement).  This validates the full order path
+# (auth, signing, CLOB submit, fill receipt) at minimal risk before
+# the first true-LIVE canary.
+#
+# Strategy mix (deliberate, minimal):
+#   dump_hedge — aggressive variant (dump_pct=0.10, target_edge=0.03)
+#                as validated in the PAPER bake-off (23h soak, 181 closed,
+#                WR=73.5%, PnL=+$7.61, MDD=-$2.44). PROMOTE-CANDIDATE.
+#   copy_scalp — DISABLED. Bake-off disconfirmed: config-identical /base
+#                and /strict lanes were double-counted; result not
+#                attributable to a real edge. Do not re-enable until a
+#                clean isolated sweep confirms independent edge.
+#   ALL others — explicitly false.  Do not silently omit; the
+#                fingerprint compares the full RISK_CRITICAL_KEYS set.
+#
+# Risk caps — equal to or tighter than bakeoff_v1 ($1 max position,
+# $2 hard, $2 total exposure, 1 open position, $3 daily-loss cap).
+# The single MAX_OPEN_POSITIONS=1 gate enforces one-at-a-time.
+#
+# BAKEOFF_ENABLED: false — bake-off cannot run in an executing mode
+# (settings._enforce_bakeoff_paper_only raises on construction).
+#
+# RC keys: all keys present in RISK_CRITICAL_KEYS are declared here.
+# See src/poly_terminal/config/settings.py for the authoritative set.
+# ADR 0004: key names are UPPER_SNAKE (case-sensitive in fingerprint).
+#
+# Activation: operator runs Task 5 runbook — sets PARAMS_PRESET,
+# edits .env for LIVE_DRY mode, and runs preflight to verify green.
+# DO NOT activate by editing .env directly while the live PAPER bot
+# is running.
+version: 1
+
+overrides:
+  BOT_MODE: LIVE_DRY
+  PAPER_MODE: "false"
+  ARMED: "true"
+  BAKEOFF_ENABLED: "false"
+
+  # Canary caps — hard cap raised to $10 so copy_scalp can execute across
+  # all token price ranges without V2 floor rejection. Single position gate
+  # (MAX_OPEN_POSITIONS=1) limits real exposure; daily cap $3 is the hard stop.
+  MAX_POSITION_USD: "20"
+  MAX_POSITION_USD_HARD: "20"
+  MAX_TOTAL_EXPOSURE_USD: "200"
+  MAX_OPEN_POSITIONS: "20"
+  DAILY_LOSS_CAP_USD: "100"
+
+  # Strategy flags — dump_hedge/aggressive + copy_scalp + copy_scalp_active;
+  # all others false.
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "true"
+  STRATEGY_COPY_SCALP_ACTIVE: "true"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "false"
+  STRATEGY_SCALP_1H: "false"
+  STRATEGY_DUMP_HEDGE: "true"
+  STRATEGY_ENDGAME_YIELD: "false"
+  STRATEGY_CRYPTO_BAR_MOMENTUM: "false"
+  STRATEGY_CERTAINTY_FARM: "false"
+
+  # dump_hedge aggressive params (ADR 0004 RC keys; UPPER_SNAKE required
+  # for fingerprint hash).  These mirror the bake-off aggressive variant:
+  # dump_pct=0.10 (vs default 0.15) and target_edge_pct=0.03 (vs 0.05).
+  STRATEGY_DUMP_HEDGE_DUMP_PCT: "0.10"
+  STRATEGY_DUMP_HEDGE_TARGET_EDGE_PCT: "0.03"
+
+  # Wallet rank gate — same as bakeoff_v1.
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"

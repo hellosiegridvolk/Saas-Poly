@@ -1,0 +1,68 @@
+# config/presets/last_stretch_research.yaml
+#
+# ⚠️  RESEARCH PRESET — DO NOT USE FOR ANY SOAK INTENDED TO PROVE
+# READINESS. THIS STRATEGY IS EXPLICITLY UNSAFE BY ITS OWN SPEC. ⚠️
+#
+# Phase 40 (2026-05-12). Enables `last_stretch_farming` for research
+# observation only. The strategy module enforces multi-layer
+# fail-closed safety:
+#
+#   Layer 1: STRATEGY_LAST_STRETCH_FARMING flag (this preset enables)
+#   Layer 2: LAST_STRETCH_RESEARCH_ARMED flag (this preset enables)
+#   Layer 3: Strategy raises LastStretchError if BOT_MODE != PAPER
+#   Layer 4: Strict gate stack rejects anything outside the band
+#
+# Even with all four passing, the production wiring stubs the TTC
+# getter to return None — strategy will see zero candidates in
+# practice. To actually fire intents, an operator would need to wire
+# a real TTC source (e.g., from the watchlist) — that work is
+# deliberately not done.
+#
+# Empirical justification for keeping this fail-closed:
+#   * 367 historical positions in band → -1.42% ROI
+#   * 35/367 catastrophic losses on $10 cost basis (full position blowups)
+#   * Single-loss penalty: ~50 winning trades to recover one big loss
+#
+# See `docs/strategies_considered.md` and the source module docstring
+# for the full evidence trail.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "1"            # ultra-tight — research only
+  MAX_POSITION_USD_HARD: "2"
+  MAX_TOTAL_EXPOSURE_USD: "2"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "5"          # cap is half the default
+
+  # Disable ALL other strategies to isolate the research signal.
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "false"
+  STRATEGY_SCALP_1H: "false"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+  STRATEGY_CRYPTO_BAR_MOMENTUM: "false"
+  STRATEGY_CERTAINTY_FARM: "false"
+
+  STRATEGY_LAST_STRETCH_FARMING: "true"
+  LAST_STRETCH_RESEARCH_ARMED: "true"
+  LAST_STRETCH_PRICE_LO: "0.95"
+  LAST_STRETCH_PRICE_HI: "0.99"
+  LAST_STRETCH_TTC_MIN_S: "10"
+  LAST_STRETCH_TTC_MAX_S: "90"
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "200"     # tight — spec recommendation
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

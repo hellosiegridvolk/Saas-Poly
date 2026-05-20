@@ -1,0 +1,54 @@
+# config/presets/paper_safe.yaml
+#
+# Initial paper-mode preset for v3.0. Conservative caps; only copy_trade enabled.
+# All other strategies disabled until peak detector + slug builders are verified
+# in their own paper soak windows.
+#
+# Each key under `overrides:` is an environment variable name (matches a field
+# in `poly_terminal.config.settings.Settings`). The preset loader sets these in
+# `os.environ` BEFORE pydantic-settings reads them, but never overwrites a
+# pre-existing value (shell env > .env > preset > Settings defaults).
+
+version: 1
+
+overrides:
+  BOT_MODE: READ_ONLY
+  PAPER_MODE: true
+  ARMED: false
+
+  MAX_POSITION_USD: "2"
+  MAX_POSITION_USD_HARD: "5"
+  MAX_TOTAL_EXPOSURE_USD: "20"
+  # CANARY caps: $2 SOFT per-trade target / $5 HARD reject line.
+  # The strategy sizes most intents at $1-$2 (soft target) and may
+  # opportunistically upsize to $5 to clear V2's 5-share / $1-
+  # marketable floor across the full price band. PerTradeSizeGate
+  # enforces $5 as the hard reject line (single source of truth
+  # via Settings.max_position_usd_hard). Max 3 concurrent → $15
+  # max exposure under the hard cap. Restore production values
+  # (10 / 15 / 500 / 50 / 15) after 10 clean canaries — see
+  # docs/runbooks/first_canary.md §"After 10".
+  MAX_OPEN_POSITIONS: "3"
+  DAILY_LOSS_CAP_USD: "5"
+
+  STRATEGY_COPY_TRADE: true
+  STRATEGY_FLASH_CRASH: false
+  STRATEGY_SCALP_15M: false
+  STRATEGY_SCALP_1H: false
+  STRATEGY_DUMP_HEDGE: false
+
+  # Cold-start floors — admit CSV-seeded placeholder convictions until
+  # wallet_history accumulates real trade outcomes. Tighten to 0.60 / 10
+  # via `paper_safe_warm.yaml` once the soak has been running ≥ 7 days.
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  # Whales legitimately fire trades in the last seconds of a 5m / 15m bar;
+  # the default 60s TimeLeftGate floor rejects too aggressively. Drop to
+  # 10s — the BarResolutionWatcher closes any position once the bar settles.
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

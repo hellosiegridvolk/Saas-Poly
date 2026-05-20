@@ -1,0 +1,98 @@
+# config/presets/certainty_farm_parallel.yaml
+#
+# Phase 39 (2026-05-12) — runs scalp_window AND certainty_farm
+# simultaneously. The allocator's `one_strategy_at_a_time=true` gate
+# enforces that only ONE position is open at any time, so the two
+# strategies compete for the single position slot — whichever fires
+# first wins until that position closes. This is the safe way to
+# evaluate both in parallel without doubling exposure.
+#
+# Why this preset exists:
+#   * scalp_window is canary-ready by every algorithmic gate (per
+#     2026-05-12 audit: 31 fills, +$0.92 true PnL, 0 mechanical
+#     failures). The sole open blocker is the funder USDC floor.
+#   * certainty_farm has the playbook-recommended gate stack
+#     (price ∈ [0.90, 0.97], spread ≤ 0.02, ttc ∈ [15min, 48h],
+#     source_count ≥ 2, EV margin 3%) but zero fills of its own.
+#     It needs PAPER history before any LIVE consideration.
+#
+# Running them in parallel lets certainty_farm accumulate its own
+# fills (when overrides are configured) while scalp_window keeps
+# producing its established edge. If both compete and certainty_farm
+# wins the slot, that's evidence the operator's confidence overrides
+# were genuinely high-EV.
+#
+# Pre-requisites for certainty_farm to actually emit intents:
+#   1. CERTAINTY_FARM_OVERRIDES env populated with ≥ 1 row in the
+#      format `condition_id:token_id:true_p:source_count` where
+#      source_count >= 2.
+#   2. Each curated market must be visible to the orderbook + Gamma
+#      plumbing (live_client present + Gamma reachable).
+#
+# Until CERTAINTY_FARM_OVERRIDES has content, certainty_farm is
+# fail-closed and produces zero intents — only scalp_window runs.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "7"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "false"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "true"
+  STRATEGY_SCALP_1H: "true"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+  STRATEGY_CRYPTO_BAR_MOMENTUM: "false"
+  STRATEGY_CERTAINTY_FARM: "true"
+
+  # scalp_window bleed-band still active. The drilldown evidence
+  # (lifetime ROI +3.12% with the [0.60, 0.80] band filtered) holds.
+  SCALP_WINDOW_BLEED_BAND_LO: "0.60"
+  SCALP_WINDOW_BLEED_BAND_HI: "0.80"
+
+  # Phase 41.6 (2026-05-14) — entry-price floor added after the
+  # first patched-code overnight surfaced a -$5 WORTHLESS_REDEEM
+  # from a NO bought at 0.07 with 10min to bar resolution. The
+  # paper-sim sold at 0.07 (looked flat), but Phase 33 truth-up
+  # caught the market resolving at $0 and wrote -$5 realized PnL.
+  # A 0.10 floor blocks the lottery-ticket tail (where paper SELLs
+  # may be fictional and resolution risk is asymmetric) without
+  # making strong claims about the bigger 0.20-0.40 question
+  # (which is a separate hypothesis to test if PnL still drifts
+  # negative under the floor).
+  SCALP_WINDOW_ENTRY_PRICE_LO: "0.10"
+  SCALP_WINDOW_ENTRY_PRICE_HI: "0.0"
+  # Phase 41.8 — min-time-to-resolution gate (MITIGATION, not the
+  # root-cause cure for the paper-sim fictional-exit pathology).
+  # 900s blocks both observed catastrophes (~576s, ~600s to
+  # resolution). NOTE: by construction this disables ALL 15m-bar
+  # entries (max runway at earliest 15m entry is only 600s) — i.e.
+  # this is effectively "trade 1h bars only". That is the honest
+  # consequence, not a bug. Cleaner equivalent: STRATEGY_SCALP_15M
+  # =false (operator's call — not changed here).
+  SCALP_WINDOW_MIN_SECONDS_TO_RESOLUTION: "900"
+
+  # certainty_farm overrides stay empty in the preset — operator
+  # populates via .env once curated markets exist. Empty here means
+  # "preset doesn't ship trades; operator decides when to fire".
+  CERTAINTY_FARM_OVERRIDES: ""
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

@@ -1,0 +1,48 @@
+# config/presets/cold_cohort_copy.yaml
+#
+# Direction B validation preset (2026-05-10 22:30) — copy_trade-only
+# soak using the cold-audit wallet cohort. Companion to endgame_only.yaml
+# (Direction A) so the operator can A/B the two without manual env edits.
+#
+# Differences vs endgame_only.yaml:
+#   * STRATEGY_COPY_TRADE: true   (was false) — exercise the new cohort
+#   * STRATEGY_ENDGAME_YIELD: false  — focus on copy_trade signal in isolation
+#
+# Wallet allow-list (set in .env, NOT here so it's auditable per-soak):
+#   WALLET_FOLLOWED_OVERRIDE = top-4 from `scripts/wallet_audit_cold.py`
+#   already installed by the wallet swap on 2026-05-10 22:00.
+#
+# Risk caps stay at single-position discipline so this is comparable to
+# the prior soaks. If forward expectancy holds across ≥30 fills with
+# ROI ≥ +1%, the cohort graduates to multi-strategy LIVE consideration.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "7"
+  MAX_OPEN_POSITIONS: "1"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "true"
+  STRATEGY_COPY_SCALP: "false"
+  STRATEGY_FLASH_CRASH: "false"
+  STRATEGY_SCALP_15M: "false"
+  STRATEGY_SCALP_1H: "false"
+  STRATEGY_DUMP_HEDGE: "false"
+  STRATEGY_ENDGAME_YIELD: "false"
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"

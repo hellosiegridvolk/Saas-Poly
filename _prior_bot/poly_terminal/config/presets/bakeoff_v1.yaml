@@ -1,0 +1,39 @@
+# config/presets/bakeoff_v1.yaml
+#
+# ACTIVATION-ONLY preset for the parallel bake-off harness. The lane
+# grid is NOT here (preset_loader only accepts flat {version,
+# overrides}); it lives in config/bakeoff/lanes_v1.yaml. This preset
+# only flips the harness on in PAPER and sets GLOBAL backstop caps —
+# per-lane caps come from the lane grid. RC keys live in a preset per
+# ADR 0004.
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: true
+  ARMED: true
+  BAKEOFF_ENABLED: true
+
+  # Global backstop ceiling. Sum of lane bankrolls ~= $1,300; this caps
+  # the whole process. Per-lane caps (lanes_v1.yaml) do the real work.
+  MAX_POSITION_USD: "1"
+  MAX_POSITION_USD_HARD: "10"
+  MAX_TOTAL_EXPOSURE_USD: "1500"
+  MAX_OPEN_POSITIONS: "10000"
+  DAILY_LOSS_CAP_USD: "1500"
+
+  # Keep shared signal plumbing live; the harness builds instances from
+  # the lane grid, not from these flags.
+  STRATEGY_COPY_TRADE: true
+  STRATEGY_COPY_SCALP: true
+  STRATEGY_FLASH_CRASH: true
+  STRATEGY_SCALP_15M: true
+  STRATEGY_SCALP_1H: true
+  STRATEGY_DUMP_HEDGE: true
+  STRATEGY_ENDGAME_YIELD: true
+  STRATEGY_CRYPTO_BAR_MOMENTUM: true
+  STRATEGY_CERTAINTY_FARM: true
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+  TIME_LEFT_FLOOR_S: "10"

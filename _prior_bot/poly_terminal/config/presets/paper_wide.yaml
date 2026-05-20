@@ -1,0 +1,53 @@
+# config/presets/paper_wide.yaml
+#
+# Broad PAPER experimentation preset (2026-05-10).
+#
+# Purpose: PAPER mode is for *exercising the entire strategy portfolio*
+# so we can build per-strategy readiness data — not just copy_trade.
+# The Phase 2 single-wallet lock is a LIVE-side discipline; PAPER soaks
+# should run wide so we get signal across the rebuild framework.
+#
+# Differences vs phase2_lock.yaml (the LIVE-canary preset):
+#   * STRATEGY_COPY_SCALP=true              — re-enabled for PAPER experimentation
+#   * STRATEGY_FLASH_CRASH=true             — exercise the legacy strategy
+#   * STRATEGY_SCALP_15M=true               — exercise the legacy strategy
+#   * STRATEGY_SCALP_1H=true                — exercise the legacy strategy
+#   * STRATEGY_DUMP_HEDGE=true              — exercise the legacy strategy
+#   * STRATEGY_ENDGAME_YIELD=false          — kept off (gamma fetcher is a stub)
+#   * MAX_OPEN_POSITIONS=3                  — multiple concurrent fills for variety
+#
+# LIVE allow-list (controlled at the RiskAllocator level, NOT the
+# preset) STILL contains only `copy_trade`; the operator must
+# explicitly add other strategies to `live_allowed_strategies` before
+# any real money flows. PAPER iterates freely, LIVE is locked.
+
+version: 1
+
+overrides:
+  BOT_MODE: PAPER
+  PAPER_MODE: "false"
+  ARMED: "true"
+
+  MAX_POSITION_USD: "5"
+  MAX_POSITION_USD_HARD: "7"
+  MAX_TOTAL_EXPOSURE_USD: "15"
+  MAX_OPEN_POSITIONS: "3"
+  DAILY_LOSS_CAP_USD: "10"
+
+  STRATEGY_COPY_TRADE: "true"
+  STRATEGY_COPY_SCALP: "true"
+  STRATEGY_FLASH_CRASH: "true"
+  STRATEGY_SCALP_15M: "true"
+  STRATEGY_SCALP_1H: "true"
+  STRATEGY_DUMP_HEDGE: "true"
+  STRATEGY_ENDGAME_YIELD: "false"   # gamma fetcher still stubbed
+
+  WALLET_TOP_DECILE_FLOOR_WIN_RATE: "0.35"
+  WALLET_TOP_DECILE_TRADES_30D_FLOOR: "0"
+
+  TIME_LEFT_FLOOR_S: "10"
+
+  LATENCY_BUDGET_GAMMA_MS: "1000"
+  LATENCY_BUDGET_CLOB_BOOK_MS: "300"
+  LATENCY_BUDGET_INTENT_DECISION_MS: "250"
+  LATENCY_BUDGET_TICK_DECISION_MS: "100"
