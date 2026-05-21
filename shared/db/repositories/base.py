@@ -33,15 +33,21 @@ class UserScopedRepository(Generic[ModelT], ABC):
         self._session = session
 
     async def get(self, user_id: UUID, entity_id: UUID) -> ModelT | None:
+        # `model` is statically a `type[Base]`; concrete subclasses (enforced by
+        # tests/unit/db/test_repositories_contract.py) carry `id` and `user_id` columns.
         stmt = select(self.model).where(
-            self.model.id == entity_id,
-            self.model.user_id == user_id,
+            self.model.id == entity_id,  # type: ignore[attr-defined]
+            self.model.user_id == user_id,  # type: ignore[attr-defined]
         )
         result = await self._session.execute(stmt)
         return cast("ModelT | None", result.scalar_one_or_none())
 
     async def list(self, user_id: UUID, limit: int = 100) -> list[ModelT]:
-        stmt = select(self.model).where(self.model.user_id == user_id).limit(limit)
+        stmt = (
+            select(self.model)
+            .where(self.model.user_id == user_id)  # type: ignore[attr-defined]
+            .limit(limit)
+        )
         result = await self._session.execute(stmt)
         return cast("list[ModelT]", list(result.scalars().all()))
 
