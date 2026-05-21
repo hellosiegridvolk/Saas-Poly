@@ -19,24 +19,22 @@ verified by tests.
 
 ---
 
-## Active PRs (stacked, in merge order)
+## Active PRs
 
-| #  | Title                                          | Branch                                          | Status                |
-| -- | ---------------------------------------------- | ----------------------------------------------- | --------------------- |
-| #2 | PR A — foundation (schema, repos, primitives)  | `claude/phase-1-ninety-cent-mvp`                | Ready for review      |
-| #3 | PR B — risk engine + gates 1–18                | `claude/phase-1-pr-b-risk-engine`               | Draft, CI green       |
-| #4 | PR C — paper exec + reconciler + event bus     | `claude/phase-1-pr-c-paper-exec-reconciler`     | Draft, CI green       |
+| #  | Title                                                | Branch                        | Status          |
+| -- | ---------------------------------------------------- | ----------------------------- | --------------- |
+| #5 | automation tracker — SessionStart hook + cron + TODO | `claude/automation-tracker`   | Draft, CI green |
 
-Merge order: PR A → PR B → PR C → main. Each retargets to `main` after the
-previous one merges.
+Foundation merge train (PRs A → B → C) landed on `main`; see **Done**
+below. PR D is the next implementation PR — not yet opened.
 
 ---
 
 ## Next planned work (in build order)
 
 - [ ] **PR D — repository + bus adapters** wiring the in-memory `EventBus`
-      and SQLAlchemy repos to the engines built in PRs A–C. No new logic; pure
-      glue. Unblocks the integration test.
+      and SQLAlchemy repos to the engines landed in PRs A–C. No new logic;
+      pure glue. Unblocks the integration test. **Next up.**
 - [ ] **PR E — `services/marketdata/`** WebSocket subscriber for a hardcoded
       market list; publishes to `market.tick` and `market.book` streams (spec
       §15 step 4).
@@ -58,8 +56,9 @@ previous one merges.
   but is empty. Required for:
   - PR F (`ninety_cent` port — strategy logic + signal generation).
   - Bodies of `shared/risk_primitives/{tick_confirmation, percent_sltp,
-    gamma_slug_builder}.py` (currently `raise NotImplementedError("port from
-    _prior_bot/")`).
+    gamma_slug_builder}.py` (landed as `NotImplementedError("port from
+    _prior_bot/")` stubs in PR A — interfaces are public, only the
+    algorithms remain).
 - **Spec not committed to repo.** Lives only in the upload area; if it
   expires Claude must re-request from Nicola before resuming spec-bound work.
 
@@ -67,6 +66,28 @@ previous one merges.
 
 ## Done
 
-- [x] PR #1 — Phase 0 bootstrap. Monorepo layout, pyproject, docker compose,
-      Alembic with users table, domain skeleton, CI on Python 3.11 & 3.12,
-      `CLAUDE.md`, ADRs 0001 + 0002.
+- [x] **PR #4 — PR C: paper-mode execution + reconciler + in-memory event
+      bus.** `shared/events` EventBus Protocol + bounded `asyncio.Queue`
+      `InMemoryEventBus`; `services/execution` `simulate_fill` +
+      `PaperExecutionEngine` + `HeartbeatCoroutine`;
+      `services/reconciliation` eight-case position math +
+      `apply_fill_to_balance` + `ReconciliationEngine` over
+      `PositionStore` / `BalanceStore` Protocols. Squashed to `main` at
+      `0e27d8f`.
+- [x] **PR #3 — PR B: risk engine + gates 1–18 + telemetry.** `RiskEngine`
+      orchestrator with fail-fast gate sequencing + per-gate
+      `duration_ms`; `shared/telemetry` Metrics Protocol +
+      `record_gate_decision`; 18 gates across identity/state, market
+      freshness, pricing sanity, sizing/exposure. Gates 19–25 deferred to
+      Phase 2; engine takes `Sequence[Gate]` so they slot in without API
+      change. Squashed to `main` at `a8d9aee`.
+- [x] **PR #2 — PR A: foundation.** Full v1 schema (migration `0002`,
+      15 tables, append-only triggers, per-user query indexes);
+      `UserScopedRepository` base + 3 exemplar repos with a contract
+      test for the `user_id` first-arg rule; `shared/polymarket` helpers
+      (`decimal_helpers`, async `GammaClient`); `strategies/_base`
+      Protocols; `shared/risk_primitives` public interfaces (bodies =
+      port-from-prior-bot stubs). Squashed to `main` at `e9f8fdb`.
+- [x] **PR #1 — Phase 0 bootstrap.** Monorepo layout, pyproject, docker
+      compose, Alembic with users table, domain skeleton, CI on Python
+      3.11 & 3.12, `CLAUDE.md`, ADRs 0001 + 0002.
