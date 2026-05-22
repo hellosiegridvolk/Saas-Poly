@@ -38,8 +38,10 @@ below. PR D is the next implementation PR — not yet opened.
 - [ ] **PR E — `services/marketdata/`** WebSocket subscriber for a hardcoded
       market list; publishes to `market.tick` and `market.book` streams (spec
       §15 step 4).
-- [ ] **PR F — `strategies/ninety_cent/`** port (spec §15 step 9). **Blocks
-      on `_prior_bot/` upload — see below.**
+- [ ] **PR F — `strategies/ninety_cent/`** port (spec §15 step 9).
+      **PARKED — needs `_prior_bot/` upload.** Decision: skip, do not
+      build from scratch (see Blocked). Build order routes around it:
+      PRs D, E, H, I run first.
 - [ ] **PR G — end-to-end paper-mode integration test** (spec §15 step 11):
       driven through the strategy worker, demonstrates signal → fill →
       reconciled position. Phase-1 DoD gate.
@@ -50,17 +52,22 @@ below. PR D is the next implementation PR — not yet opened.
 
 ---
 
-## Blocked (re-checked every 4 hours by the cron workflow)
+## Blocked / parked (re-checked every 4 hours by the cron workflow)
 
-- **`_prior_bot/` not uploaded.** The directory is excluded from lint/test
-  but is empty. Required for:
+- **`_prior_bot/` not uploaded — PR F parked.** The directory is excluded
+  from lint/test but is empty. **Decision (2026-05-22): skip, do NOT build
+  from scratch** — CLAUDE.md §17 and "do not infer requirements" forbid
+  inventing spec-bound trading logic. Stays parked until the reference
+  code is uploaded:
   - PR F (`ninety_cent` port — strategy logic + signal generation).
   - Bodies of `shared/risk_primitives/{tick_confirmation, percent_sltp,
     gamma_slug_builder}.py` (landed as `NotImplementedError("port from
     _prior_bot/")` stubs in PR A — interfaces are public, only the
     algorithms remain).
-- **Spec not committed to repo.** Lives only in the upload area; if it
-  expires Claude must re-request from Nicola before resuming spec-bound work.
+- **Spec not committed to repo.** Lives only in the upload area.
+  **Decision (2026-05-22): proceed without it** on non-spec-bound PRs
+  (D pure glue, H Clerk auth); pause and re-request from Nicola before
+  any spec-bound decision.
 
 ---
 
