@@ -1,0 +1,103 @@
+name: Track progress
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - TODO.md
+      - .github/workflows/track-progress.yml
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: track-progress
+  cancel-in-progress: false
+
+jobs:
+  sync-tracker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync TODO.md into sticky tracker issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const LABEL = 'tracker';
+            const TITLE = 'Saas-Poly progress tracker';
+            const TODO_PATH = path.join(process.env.GITHUB_WORKSPACE, 'TODO.md');
+
+            if (!fs.existsSync(TODO_PATH)) {
+              core.setFailed(`TODO.md not found at ${TODO_PATH}`);
+              return;
+            }
+            const todo = fs.readFileSync(TODO_PATH, 'utf8');
+
+            // Ensure the label exists (idempotent).
+            try {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+                color: '0e8a16',
+                description: 'Sticky tracker issue managed by track-progress.yml',
+              });
+              core.info(`Created label "${LABEL}".`);
+            } catch (err) {
+              if (err.status !== 422) throw err;
+              core.info(`Label "${LABEL}" already exists.`);
+            }
+
+            // Find the lowest-numbered open issue with the label.
+            const existing = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: LABEL,
+                state: 'open',
+                per_page: 100,
+              },
+            );
+            const tracker = existing
+              .filter((i) => !i.pull_request)
+              .sort((a, b) => a.number - b.number)[0];
+
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const timestamp = new Date().toISOString();
+            const body = [
+              '<!-- managed-by: track-progress.yml — do not edit by hand; edit TODO.md instead -->',
+              '',
+              todo.trimEnd(),
+              '',
+              '---',
+              `_Last synced from \`TODO.md\` at ${timestamp} by [${context.workflow} #${context.runNumber}](${runUrl})._`,
+              '',
+            ].join('\n');
+
+            if (tracker) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: tracker.number,
+                body,
+              });
+              core.info(`Updated tracker issue #${tracker.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: TITLE,
+                body,
+                labels: [LABEL],
+              });
+              core.info(`Created tracker issue #${created.data.number}.`);
+            }
